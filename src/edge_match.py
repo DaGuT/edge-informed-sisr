@@ -234,7 +234,7 @@ class EdgeMatch():
                 outputs = self.sr_model(lr_images, hr_edges_pred)
 
             output = self.postprocess(outputs)[0]
-            path = os.path.join(self.results_path, name)
+            path = os.path.join(self.results_path, name.replace('.dcm','.png'))
             print(index, name)
 
             imsave(output, path)

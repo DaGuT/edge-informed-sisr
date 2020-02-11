@@ -10,6 +10,8 @@ from PIL import Image
 from scipy.misc import imread
 from skimage.feature import canny
 from skimage.color import rgb2gray, gray2rgb
+import SimpleITK as sitk
+from skimage import exposure
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -45,12 +47,32 @@ class Dataset(torch.utils.data.Dataset):
         scale = self.scale
 
         # load hr image
-        hr_img = imread(self.hr_data[index])
+        if '.dcm' in self.hr_data[index]:
+            hr_img = sitk.GetArrayFromImage(sitk.ReadImage(self.hr_data[index]))[0, :, :]
+
+            hr_img=exposure.equalize_adapthist(hr_img)
+            hr_img=gray2rgb(np.uint8(hr_img * 255))
+
+            sp = hr_img.shape
+            hr_img = scipy.misc.imresize(hr_img, [sp[0] if sp[0]%2==0 else sp[0]+1, sp[1] if sp[1]%2==0 else sp[1]+1])
+            print(np.uint8(sitk.GetArrayFromImage(sitk.ReadImage(self.hr_data[index]))).shape)
+        else:
+            hr_img = imread(self.hr_data[index], mode='RGB')
 
 
         # load lr image
         if len(self.lr_data) != 0:
-            lr_img = imread(self.lr_data[index])
+            if '.dcm' in self.lr_data[index]:
+                lr_img = sitk.GetArrayFromImage(sitk.ReadImage(self.lr_data[index]))[0, :, :]
+
+                lr_img = exposure.equalize_adapthist(lr_img)
+                lr_img = gray2rgb(np.uint8(lr_img * 255))
+
+                sp = lr_img.shape
+
+                lr_img = scipy.misc.imresize(lr_img, [sp[0] if sp[0]%2==0 else sp[0]+1, sp[1] if sp[1]%2==0 else sp[1]+1])
+            else:
+                lr_img = imread(self.lr_data[index], mode='RGB')
         # create lr image
         else:
             lr_img = hr_img
@@ -107,7 +129,7 @@ class Dataset(torch.utils.data.Dataset):
         # flist: image file path, image directory path, text file flist path
         if isinstance(flist, str):
             if os.path.isdir(flist):
-                flist = list(glob.glob(flist + '/*.jpg')) + list(glob.glob(flist + '/*.png'))
+                flist = list(glob.glob(flist + '/*.jpg')) + list(glob.glob(flist + '/*.png')) + list(glob.glob(flist + '/*.dcm'))
                 flist.sort()
                 return flist
 
