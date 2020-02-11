@@ -176,7 +176,7 @@ class SRModel(BaseModel):
         kernel[0, 0] = 1
         kernel_weight = torch.tensor(np.tile(kernel, (3, 1, 1, 1))).float()     # (out_channels, in_channels/groups, height, width)
 
-        self.add_module('scale_kernel', kernel_weight)
+        self.scale_kernel = kernel_weight
 
         self.add_module('generator', generator)
         self.add_module('discriminator', discriminator)
